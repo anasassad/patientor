@@ -2,9 +2,10 @@ import { Box, Typography } from "@mui/material";
 import MaleIcon from '@mui/icons-material/Male';
 import FemaleIcon from '@mui/icons-material/Female';
 import { useParams } from "react-router-dom";
-import { Patient } from "../../types";
+import { Diagnosis, Patient } from "../../types";
 import { useEffect, useState } from "react";
 import patientService from "../../services/patients";
+import diagnosisService from "../../services/diagnoses";
 import axios from "axios";
 
 const assertNever = (value: never): never => {
@@ -14,12 +15,16 @@ const assertNever = (value: never): never => {
 const PatientDetailPage = () => {
   const { id } = useParams();
   const [patient, setPatient] = useState<Patient | null>(null);
+  const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
   const [error, setError] = useState<string>();
 
   useEffect(() => {
     const fetchPatientById = async () => {
       try {
         const patient = await patientService.getPatientById(id);
+        const diagnoses = await diagnosisService.getAll();
+
+        setDiagnoses(diagnoses);
         setPatient(patient);
       } catch (error) {
         if (axios.isAxiosError(error)) {
@@ -65,9 +70,11 @@ const PatientDetailPage = () => {
                   <Typography sx={{ mb: 2 }}><strong>{entry.date}</strong> - {entry.description}</Typography>
                   {entry.diagnosisCodes && (
                     <ul>
-                      {entry.diagnosisCodes.map((code, index) => (
-                        <li key={index}>{code}</li>
-                      ))}
+                      {entry.diagnosisCodes.map((code, index) => {
+                        const diagnosis = diagnoses.find(d => d.code === code);
+
+                        return <li key={index}>{code} {diagnosis ? `- ${diagnosis.name}` : ""}</li>;
+                      })}
                     </ul>
                   )}
                   <Typography variant="body2"><strong>Discharge: </strong>{entry.discharge.date} ({entry.discharge.criteria})</Typography>
@@ -80,9 +87,11 @@ const PatientDetailPage = () => {
                   <Typography sx={{ mb: 2 }}><strong>{entry.date}</strong> - {entry.description}</Typography>
                   {entry.diagnosisCodes && (
                     <ul>
-                      {entry.diagnosisCodes.map((code, index) => (
-                        <li key={index}>{code}</li>
-                      ))}
+                      {entry.diagnosisCodes.map((code, index) => {
+                        const diagnosis = diagnoses.find(d => d.code === code);
+
+                        return <li key={index}>{code} {diagnosis ? `- ${diagnosis.name}` : ""}</li>;
+                      })}
                     </ul>
                   )}
                   <Typography variant="body2"><strong>Health rating: </strong>{entry.healthCheckRating}</Typography>
@@ -95,9 +104,11 @@ const PatientDetailPage = () => {
                   <Typography sx={{ mb: 2 }}><strong>{entry.date}</strong> - {entry.description}</Typography>
                   {entry.diagnosisCodes && (
                     <ul>
-                      {entry.diagnosisCodes.map((code, index) => (
-                        <li key={index}>{code}</li>
-                      ))}
+                      {entry.diagnosisCodes.map((code, index) => {
+                        const diagnosis = diagnoses.find(d => d.code === code);
+
+                        return <li key={index}>{code} {diagnosis ? `- ${diagnosis.name}` : ""}</li>;
+                      })}
                     </ul>
                   )}
                   <Typography variant="body2"><strong>Employer: </strong> {entry.employerName}</Typography>
