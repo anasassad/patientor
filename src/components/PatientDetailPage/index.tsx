@@ -7,10 +7,7 @@ import { useEffect, useState } from "react";
 import patientService from "../../services/patients";
 import diagnosisService from "../../services/diagnoses";
 import axios from "axios";
-
-const assertNever = (value: never): never => {
-  throw new Error(`Unhandled entry type: ${JSON.stringify(value)}`);
-};
+import EntryDetails from "./EntryDetails";
 
 const PatientDetailPage = () => {
   const { id } = useParams();
@@ -63,68 +60,9 @@ const PatientDetailPage = () => {
       <Box mt={4}>
         <Typography variant="h6">Entries</Typography>
         {patient.entries.map((entry) => {
-          switch (entry.type) {
-            case "Hospital":
-              return (
-                <Box key={entry.id} sx={{ border: "1px solid #ccc", borderRadius: 2, p: 2, mt: 2 }}>
-                  <Typography sx={{ mb: 2 }}><strong>{entry.date}</strong> - {entry.description}</Typography>
-                  {entry.diagnosisCodes && (
-                    <ul>
-                      {entry.diagnosisCodes.map((code, index) => {
-                        const diagnosis = diagnoses.find(d => d.code === code);
-
-                        return <li key={index}>{code} {diagnosis ? `- ${diagnosis.name}` : ""}</li>;
-                      })}
-                    </ul>
-                  )}
-                  <Typography variant="body2"><strong>Discharge: </strong>{entry.discharge.date} ({entry.discharge.criteria})</Typography>
-                </Box>
-              );
-
-            case "HealthCheck":
-              return (
-                <Box key={entry.id} sx={{ border: "1px solid #ccc", borderRadius: 2, p: 2, mt: 2 }}>
-                  <Typography sx={{ mb: 2 }}><strong>{entry.date}</strong> - {entry.description}</Typography>
-                  {entry.diagnosisCodes && (
-                    <ul>
-                      {entry.diagnosisCodes.map((code, index) => {
-                        const diagnosis = diagnoses.find(d => d.code === code);
-
-                        return <li key={index}>{code} {diagnosis ? `- ${diagnosis.name}` : ""}</li>;
-                      })}
-                    </ul>
-                  )}
-                  <Typography variant="body2"><strong>Health rating: </strong>{entry.healthCheckRating}</Typography>
-                </Box>
-              );
-
-            case "OccupationalHealthcare":
-              return (
-                <Box key={entry.id} sx={{ border: "1px solid #ccc", borderRadius: 2, p: 2, mt: 2 }}>
-                  <Typography sx={{ mb: 2 }}><strong>{entry.date}</strong> - {entry.description}</Typography>
-                  {entry.diagnosisCodes && (
-                    <ul>
-                      {entry.diagnosisCodes.map((code, index) => {
-                        const diagnosis = diagnoses.find(d => d.code === code);
-
-                        return <li key={index}>{code} {diagnosis ? `- ${diagnosis.name}` : ""}</li>;
-                      })}
-                    </ul>
-                  )}
-                  <Typography variant="body2"><strong>Employer: </strong> {entry.employerName}</Typography>
-                  {entry.sickLeave && (
-                    <Typography variant="body2"><strong>Sick leave: </strong> {entry.sickLeave.startDate} to {entry.sickLeave.endDate}</Typography>
-                  )}
-                </Box>
-              );
-
-            default:
-              return assertNever(entry);
-          }
+          return <EntryDetails key={entry.id} entry={entry} diagnoses={diagnoses} />;
         })}
-
       </Box>
-
     </div>
   );
 };
