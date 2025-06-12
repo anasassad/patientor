@@ -113,8 +113,8 @@ const PatientDetailPage = () => {
         if (Array.isArray(backendError) && backendError[0]?.code === "invalid_union") {
           const messages = mapZodUnionErrorsForHealthCheck(backendError[0]);
           setError(messages);
-        } else {
-          setError("Failed to add entry.");
+        } else {          
+          setError(error.response?.data.error[0].message || "Failed to add entry.");
         }
       } else {
         setError("Unexpected error occurred.");
