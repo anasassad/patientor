@@ -1,8 +1,8 @@
-import { Box, Button, TextField, Typography } from "@mui/material";
+import { Box, Button, MenuItem, TextField, Typography } from "@mui/material";
 import MaleIcon from '@mui/icons-material/Male';
 import FemaleIcon from '@mui/icons-material/Female';
 import { useParams } from "react-router-dom";
-import { Diagnosis, HealthCheckEntry, HealthCheckRating, NewEntry, Patient } from "../../types";
+import { Diagnosis, HealthCheckRating, NewEntry, Patient } from "../../types";
 import React, { SyntheticEvent, useEffect, useState } from "react";
 import patientService from "../../services/patients";
 import diagnosisService from "../../services/diagnoses";
@@ -44,10 +44,41 @@ function mapZodUnionErrorsForHealthCheck(error: any): string[] {
     return fieldMessages[field] || issue.message;
   });
 }
+
+const entriesType = [
+  "HealthCheck", "Hospital", "OccupationalHealthcare"
+];
+
+const createEmptyEntry = (type: string): NewEntry => {
+  const base = {
+    description: "",
+    date: "",
+    specialist: "",
+    diagnosisCodes: []
+  };
+
+  switch (type) {
+    case "HealthCheck":
+      return { ...base, healthCheckRating: HealthCheckRating.Healthy, type: "HealthCheck" };
+    case "Hospital":
+      return { ...base, discharge: { date: "", criteria: "" }, type: "Hospital" };
+    case "OccupationalHealthcare":
+      return {
+        ...base,
+        type: "OccupationalHealthcare",
+        employerName: "",
+        sickLeave: { startDate: "", endDate: "" }
+      };
+    default:
+      throw new Error("Unsupported entry type");
+  }
+};
+
 const PatientDetailPage = () => {
   const { id } = useParams();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
+  const [selectedType, setSelectedType] = useState<string>('HealthCheck');
   const [entry, setEntry] = useState<NewEntry>({
     type: "HealthCheck",
     description: "",
@@ -85,6 +116,11 @@ const PatientDetailPage = () => {
 
     void fetchPatientById();
   }, [id]);
+
+  useEffect(() => {
+    setEntry(createEmptyEntry(selectedType));
+  }, [selectedType]);
+
 
   if (!patient) {
     return (<Box>
@@ -125,19 +161,78 @@ const PatientDetailPage = () => {
   const handleOnChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
 
-    if (entry.type === "HealthCheck") {
-      if (name === "healthCheckRating") {
-        setEntry({ ...entry, [name]: Number(value) as HealthCheckRating });
-      } else if (name === "diagnosisCodes") {
-        const codes = value.split(',').map(code => code.trim()).filter(Boolean);
-        setEntry({ ...entry, diagnosisCodes: codes });
-      } else {
-        setEntry({ ...entry, [name]: value });
-      }
+    switch (entry.type) {
+      case "HealthCheck":
+        if (name === "healthCheckRating") {
+          setEntry({ ...entry, healthCheckRating: Number(value) as HealthCheckRating });
+        } else if (name === "diagnosisCodes") {
+          const codes = value.split(',').map(code => code.trim()).filter(Boolean);
+          setEntry({ ...entry, diagnosisCodes: codes });
+        } else {
+          setEntry({ ...entry, [name]: value });
+        }
+        break;
+
+      case "Hospital":
+        if (name === "dischargeDate") {
+          setEntry({
+            ...entry,
+            discharge: {
+              ...entry.discharge,
+              date: value
+            }
+          });
+        } else if (name === "dischargeCriteria") {
+          setEntry({
+            ...entry,
+            discharge: {
+              ...entry.discharge,
+              criteria: value
+            }
+          });
+        } else if (name === "diagnosisCodes") {
+          const codes = value.split(',').map(code => code.trim()).filter(Boolean);
+          setEntry({ ...entry, diagnosisCodes: codes });
+        } else {
+          setEntry({ ...entry, [name]: value });
+        }
+        break;
+
+      case "OccupationalHealthcare":
+        if (name === "employerName") {
+          setEntry({ ...entry, employerName: value });
+        } else if (name === "sickLeaveStartDate") {
+          setEntry({
+            ...entry,
+            sickLeave: {
+              ...(entry.sickLeave || { startDate: "", endDate: "" }),
+              startDate: value
+            }
+          });
+        } else if (name === "sickLeaveEndDate") {
+          setEntry({
+            ...entry,
+            sickLeave: {
+              ...(entry.sickLeave || { startDate: "", endDate: "" }),
+              endDate: value
+            }
+          });
+        } else if (name === "diagnosisCodes") {
+          const codes = value.split(',').map(code => code.trim()).filter(Boolean);
+          setEntry({ ...entry, diagnosisCodes: codes });
+        } else {
+          setEntry({ ...entry, [name]: value });
+        }
+        break;
+
+      default:
+        break;
     }
   };
 
+
   const resetForm = () => {
+    setSelectedType("HealthCheck");
     setEntry({
       type: "HealthCheck",
       description: "",
@@ -147,9 +242,6 @@ const PatientDetailPage = () => {
       diagnosisCodes: []
     });
   };
-
-  console.log(error);
-
 
   return (
     <div className="App">
@@ -167,15 +259,28 @@ const PatientDetailPage = () => {
         </Typography>
       </Box>
       <Box>
-      {typeof error === 'string' && (
-        <Typography color="error">{error}</Typography>
-      )}
-      {typeof error === 'object' && error.map((e, i) => (
-        <Typography key={i} color="error">{e}</Typography>
-      ))}
-    </Box>
+        {typeof error === 'string' && (
+          <Typography color="error">{error}</Typography>
+        )}
+        {typeof error === 'object' && error.map((e, i) => (
+          <Typography key={i} color="error">{e}</Typography>
+        ))}
+      </Box>
       <Box component="form" autoComplete="off" onSubmit={addEntryToPatient} my={2}>
-
+        <TextField
+          id="outlined-select-entries-type"
+          select
+          label="Select"
+          value={selectedType}
+          onChange={(e) => setSelectedType(e.target.value)}
+          helperText="Please select your entry"
+        >
+          {entriesType.map((type, index) => (
+            <MenuItem key={index} value={type}>
+              {type}
+            </MenuItem>
+          ))}
+        </TextField>
         <TextField
           fullWidth
           required
@@ -210,19 +315,90 @@ const PatientDetailPage = () => {
           value={entry.specialist}
           onChange={handleOnChange}
         />
-        <TextField
-          fullWidth
-          required
-          variant="standard"
-          id="healthcheckrating"
-          name="healthCheckRating"
-          label="Healthcheck Rating"
-          type="number"
-          margin="normal"
-          // This is not safe and it's for temporary uses
-          value={(entry as HealthCheckEntry).healthCheckRating}
-          onChange={handleOnChange}
-        />
+        {entry.type === "HealthCheck" && (
+          <TextField
+            fullWidth
+            required
+            variant="standard"
+            id="healthcheckrating"
+            name="healthCheckRating"
+            label="HealthCheck Rating"
+            type="number"
+            margin="normal"
+            value={entry.healthCheckRating}
+            onChange={handleOnChange}
+          />
+        )}
+        {entry.type === "Hospital" && (
+          <>
+            <TextField
+              fullWidth
+              required
+              variant="standard"
+              id="dischargedate"
+              name="dischargeDate"
+              label="Discharge Date"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              margin="normal"
+              value={entry.discharge.date}
+              onChange={handleOnChange}
+            />
+            <TextField
+              fullWidth
+              required
+              variant="standard"
+              id="dischargecriteria"
+              name="dischargeCriteria"
+              label="Discharge Criteria"
+              type="text"
+              InputLabelProps={{ shrink: true }}
+              margin="normal"
+              value={entry.discharge.criteria}
+              onChange={handleOnChange}
+            />
+          </>
+        )}
+        {entry.type === "OccupationalHealthcare" && (
+          <>
+            <TextField
+              fullWidth
+              required
+              variant="standard"
+              id="employername"
+              name="employerName"
+              label="Employer Name"
+              InputLabelProps={{ shrink: true }}
+              margin="normal"
+              value={entry.employerName}
+              onChange={handleOnChange}
+            />
+            <TextField
+              fullWidth
+              variant="standard"
+              id="sickleavestartdate"
+              name="sickLeaveStartDate"
+              label="Sick Leave Start Date"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              margin="normal"
+              value={entry.sickLeave?.startDate}
+              onChange={handleOnChange}
+            />
+            <TextField
+              fullWidth
+              variant="standard"
+              id="sickleaveendDate"
+              name="sickLeaveEndDate"
+              label="Sick Leave End Date"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              margin="normal"
+              value={entry.sickLeave?.endDate}
+              onChange={handleOnChange}
+            />
+          </>
+        )}
         <TextField
           fullWidth
           required
