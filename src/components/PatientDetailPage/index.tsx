@@ -1,4 +1,4 @@
-import { Box, Button, MenuItem, TextField, Typography } from "@mui/material";
+import { Box, Button, Chip, FormControl, InputLabel, MenuItem, OutlinedInput, Select, TextField, Typography } from "@mui/material";
 import MaleIcon from '@mui/icons-material/Male';
 import FemaleIcon from '@mui/icons-material/Female';
 import { useParams } from "react-router-dom";
@@ -149,7 +149,7 @@ const PatientDetailPage = () => {
         if (Array.isArray(backendError) && backendError[0]?.code === "invalid_union") {
           const messages = mapZodUnionErrorsForHealthCheck(backendError[0]);
           setError(messages);
-        } else {          
+        } else {
           setError(error.response?.data.error[0].message || "Failed to add entry.");
         }
       } else {
@@ -399,17 +399,40 @@ const PatientDetailPage = () => {
             />
           </>
         )}
-        <TextField
-          fullWidth
-          required
-          variant="standard"
-          id="diagnosiscodes"
-          name="diagnosisCodes"
-          label="Diagnosis Codes"
-          margin="normal"
-          value={entry.diagnosisCodes?.join(", ")}
-          onChange={handleOnChange}
-        />
+        <FormControl fullWidth margin="normal">
+          <InputLabel id="diagnosiscodeslabel">Diagnosis Codes</InputLabel>
+          <Select
+            labelId="diagnosiscodeslabel"
+            id="diagnosiscodes"
+            multiple
+            name="diagnosisCodes"
+            value={entry.diagnosisCodes}
+            onChange={(e) => {
+              const {
+                target: { value },
+              } = e;
+              setEntry({
+                ...entry,
+                diagnosisCodes: typeof value === 'string' ? value.split(',') : value,
+              });
+            }}
+            input={<OutlinedInput id="selectmultiplechip" label="Diagnosis Codes" />}
+            renderValue={(selected) => (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {selected.map((code) => (
+                  <Chip key={code} label={code} />
+                ))}
+              </Box>
+            )}
+          >
+            {diagnoses.map((diag) => (
+              <MenuItem key={diag.code} value={diag.code}>
+                {diag.code} — {diag.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         <Box display="flex" justifyContent="space-between" mt={2}>
           <Button type="submit" variant="contained">Add</Button>
           <Button type="button" onClick={resetForm} variant="contained">Cancel</Button>
